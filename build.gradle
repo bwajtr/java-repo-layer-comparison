@@ -42,6 +42,7 @@ dependencies {
             // jdbi dependencies
             'org.jdbi:jdbi:2.77',
 
+            // simpleflatmapper
             'org.simpleflatmapper:sfm-springjdbc:3.6'
     )
 

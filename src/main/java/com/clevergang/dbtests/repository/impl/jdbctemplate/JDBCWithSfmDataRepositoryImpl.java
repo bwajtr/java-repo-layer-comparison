@@ -33,34 +33,36 @@ import java.util.stream.Collectors;
  *
  */
 @Repository
-public class SfmJDBCDataRepositoryImpl implements DataRepository {
-    private static final Logger logger = LoggerFactory.getLogger(SfmJDBCDataRepositoryImpl.class);
+public class JDBCWithSfmDataRepositoryImpl implements DataRepository {
+    private static final Logger logger = LoggerFactory.getLogger(JDBCWithSfmDataRepositoryImpl.class);
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    private final JdbcTemplateCrud<Company, Integer> companyCrud;
-    private final JdbcTemplateCrud<Project, Integer> projectCrud;
-    private final JdbcTemplateCrud<Employee, Integer> employeeCrud;
+    // Cruds provide insert, update, select and delete.
+    private final JdbcTemplateCrud<Company, Integer>    companyCrud;
+    private final JdbcTemplateCrud<Project, Integer>    projectCrud;
+    private final JdbcTemplateCrud<Employee, Integer>   employeeCrud;
     private final JdbcTemplateCrud<Department, Integer> departmentCrud;
 
-    private final RowMapper<Company> companyMapper;
+    // Spring row mappers implementation
+    private final RowMapper<Company>    companyMapper;
     private final RowMapper<Department> departmentMapper;
-    private final RowMapper<Employee> employeeMapper;
-    private final RowMapper<ProjectsWithCostsGreaterThanOutput> projectsWithCostsGreaterThanOutputRowMapper;
-    private final RowMapper<RegisterEmployeeOutput> registerEmployeeOutputRowMapper;
+    private final RowMapper<Employee>   employeeMapper;
 
+    private final RowMapper<ProjectsWithCostsGreaterThanOutput> projectsWithCostsGreaterThanOutputRowMapper;
+    private final RowMapper<RegisterEmployeeOutput>             registerEmployeeOutputRowMapper;
+
+    // Spring SqlParameterSource factory to create parameter source from RegisterEmployeeInput
     private final SqlParameterSourceFactory<RegisterEmployeeInput> registerEmployeeInputSqlParameterSourceFactory;
 
     @SuppressWarnings("SpringJavaAutowiringInspection")
     @Autowired
-    public SfmJDBCDataRepositoryImpl(NamedParameterJdbcTemplate jdbcTemplate) {
+    public JDBCWithSfmDataRepositoryImpl(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
 
         JdbcOperations jdbcOperations = jdbcTemplate.getJdbcOperations();
 
-        JdbcTemplateMapperFactory mapperFactory = JdbcTemplateMapperFactory
-                .newInstance();
-
+        JdbcTemplateMapperFactory mapperFactory = JdbcTemplateMapperFactory.newInstance();
 
         companyCrud =
                 mapperFactory
@@ -71,15 +73,15 @@ public class SfmJDBCDataRepositoryImpl implements DataRepository {
                         .crud(Employee.class, Integer.class)
                         .to(jdbcOperations, "employee");
 
-
         departmentCrud =
                 mapperFactory
                         .crud(Department.class, Integer.class)
-                        .to(jdbcOperations, "department");
+                        .to(jdbcOperations); // if table name is not specified will look for a matching one
 
         projectCrud =
                 JdbcTemplateMapperFactory
                         .newInstance()
+                        // add alias from column datastarted to date property
                         .addAlias("datestarted", "date")
                         .crud(Project.class, Integer.class)
                         .to(jdbcOperations, "project");
@@ -87,17 +89,23 @@ public class SfmJDBCDataRepositoryImpl implements DataRepository {
         companyMapper =
                 mapperFactory.newRowMapper(Company.class);
 
-        departmentMapper = mapperFactory.newRowMapper(Department.class);
-        employeeMapper = mapperFactory.newRowMapper(Employee.class);
-        projectsWithCostsGreaterThanOutputRowMapper = mapperFactory.newRowMapper(ProjectsWithCostsGreaterThanOutput.class);
-        registerEmployeeOutputRowMapper = JdbcTemplateMapperFactory
-                .newInstance()
-                .addColumnProperty(
-                        k -> k.getName().contains("id"),
-                        k -> new RenameProperty(k.getName().replace("id", "pid")))
-                .newRowMapper(RegisterEmployeeOutput.class);
+        departmentMapper =
+                mapperFactory.newRowMapper(Department.class);
+        employeeMapper =
+                mapperFactory.newRowMapper(Employee.class);
+        projectsWithCostsGreaterThanOutputRowMapper =
+                mapperFactory.newRowMapper(ProjectsWithCostsGreaterThanOutput.class);
+        registerEmployeeOutputRowMapper =
+                JdbcTemplateMapperFactory
+                    .newInstance()
+                    // add rules to rename id column name to pid in output object
+                    .addColumnProperty(
+                            k -> k.getName().contains("id"),
+                            k -> new RenameProperty(k.getName().replace("id", "pid")))
+                    .newRowMapper(RegisterEmployeeOutput.class);
 
-        registerEmployeeInputSqlParameterSourceFactory = mapperFactory.newSqlParameterSourceFactory(RegisterEmployeeInput.class);
+        registerEmployeeInputSqlParameterSourceFactory =
+                mapperFactory.newSqlParameterSourceFactory(RegisterEmployeeInput.class);
     }
 
     @Override

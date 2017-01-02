@@ -1,6 +1,6 @@
 package com.clevergang.dbtests;
 
-import com.clevergang.dbtests.repository.impl.jdbctemplate.SfmJDBCDataRepositoryImpl;
+import com.clevergang.dbtests.repository.impl.jdbctemplate.JDBCWithSfmDataRepositoryImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,10 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 @ContextConfiguration(classes = DbTestsApplication.class)
 @Transactional
 @Rollback
-public class SfmJdbcTemplateScenariosTest {
+public class JdbcWithSfmTemplateScenariosTest {
 
     @Autowired
-    private SfmJDBCDataRepositoryImpl jdbcRepository;
+    private JDBCWithSfmDataRepositoryImpl jdbcRepository;
 
     private Scenarios scenarios;
 
