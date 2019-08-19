@@ -1,20 +1,17 @@
 package com.clevergang.dbtests;
 
-import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.EbeanServerFactory;
-import com.avaje.ebean.config.ServerConfig;
-import com.avaje.ebean.springsupport.txn.SpringAwareJdbcTransactionManager;
+import io.vertx.pgclient.PgPool;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.jdbi.v3.core.Jdbi;
 import org.jooq.conf.RenderNameStyle;
 import org.jooq.conf.Settings;
 import org.jooq.conf.StatementType;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.logging.SLF4JLog;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -84,30 +81,6 @@ public class DbTestsApplication {
         sqlSessionFactoryBean.setConfigLocation(new ClassPathResource("mybatis/mybatis-config.xml"));
 
         return new SqlSessionTemplate(sqlSessionFactoryBean.getObject(), ExecutorType.BATCH);
-    }
-
-    /*
-     * EBEAN CONFIGURATIONS
-     */
-
-    @SuppressWarnings("SpringJavaAutowiringInspection")
-    @Bean
-    public ServerConfig ebeanServerConfig(DataSource dataSource) {
-        ServerConfig config = new ServerConfig();
-        config.setName("ebeanServer");
-        config.setDefaultServer(true);
-        config.setDataSource(dataSource);
-        config.addPackage("com.clevergang.dbtests.repository.impl.ebean.entities");
-        config.setExternalTransactionManager(new SpringAwareJdbcTransactionManager());
-        config.setAutoCommitMode(false);
-        config.setExpressionNativeIlike(true);
-
-        return config;
-    }
-
-    @Bean
-    public EbeanServer ebeanServer(ServerConfig serverConfig) {
-        return EbeanServerFactory.create(serverConfig);
     }
 
     /*
