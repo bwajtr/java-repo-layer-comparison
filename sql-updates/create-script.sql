@@ -4,11 +4,11 @@
 
 -- (re)create tables first
 
-DROP TABLE ProjectEmployee;
-DROP TABLE Project;
-DROP TABLE Employee;
-DROP TABLE Department;
-DROP TABLE Company;
+DROP TABLE if exists ProjectEmployee;
+DROP TABLE if exists Project;
+DROP TABLE if exists Employee;
+DROP TABLE if exists Department;
+DROP TABLE if exists Company;
 
 CREATE TABLE Company (
   pid SERIAL PRIMARY KEY,

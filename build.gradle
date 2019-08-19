@@ -25,7 +25,8 @@ dependencies {
             'com.github.javaplugs:mybatis-types:0.3', // required so mybatis works with java8 datetime classes (LocalDate)
             
             // jdbi dependencies
-            'org.jdbi:jdbi:2.77'
+            'org.jdbi:jdbi3-postgres:3.9.1'
+
     )
 
     testCompile(

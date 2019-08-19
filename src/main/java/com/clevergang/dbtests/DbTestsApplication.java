@@ -89,13 +89,12 @@ public class DbTestsApplication {
 
     @SuppressWarnings("SpringJavaAutowiringInspection")
     @Bean
-    public DBI jdbiFactory(DataSource dataSource) {
+    public Jdbi jdbiFactory(DataSource dataSource) {
         // note that for JDBI we have to wrap datasource with TransactionAwareDataSourceProxy otherwise JDBI won't respect
         // transactions created by spring
         TransactionAwareDataSourceProxy transactionAwareDataSourceProxy = new TransactionAwareDataSourceProxy(dataSource);
-        DBI dbi = new DBI(transactionAwareDataSourceProxy);
-        dbi.setSQLLog(new SLF4JLog());  // to enable SLF4J logging
-        return dbi;
+
+        return Jdbi.create(transactionAwareDataSourceProxy);
     }
 
     public static void main(String[] args) {
