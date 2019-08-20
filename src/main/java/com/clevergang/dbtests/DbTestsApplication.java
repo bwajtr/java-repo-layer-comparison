@@ -29,6 +29,9 @@ import javax.sql.DataSource;
 @Configuration
 public class DbTestsApplication {
 
+    @Value("${datasource.url}")
+    private String jdbcUrl;
+
     /*
      * JOOQ CONFIGURATIONS
      */
@@ -95,6 +98,13 @@ public class DbTestsApplication {
         TransactionAwareDataSourceProxy transactionAwareDataSourceProxy = new TransactionAwareDataSourceProxy(dataSource);
 
         return Jdbi.create(transactionAwareDataSourceProxy);
+    }
+
+    @Bean
+    public PgPool vertxSqlClient() {
+
+        // Create the pooled client
+        return PgPool.pool(jdbcUrl);
     }
 
     public static void main(String[] args) {
