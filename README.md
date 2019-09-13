@@ -1,6 +1,7 @@
 # Java persistence frameworks comparison
 
-Comparison of how **non-JPA** SQL mapping (persistence) frameworks for Java (jOOQ, Spring JDBCTemplate, etc.) are used.
+This project compares usage of **non-JPA** SQL mapping (persistence) frameworks for Java (jOOQ, Spring JDBCTemplate, etc.).
+We used it to find out which DB layer would be best during development of https://www.spintrace.com
 
 I'm not comparing performance, but rather how are these frameworks used for everyday tasks.
 
