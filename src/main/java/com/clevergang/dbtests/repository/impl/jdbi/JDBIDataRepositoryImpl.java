@@ -2,10 +2,11 @@ package com.clevergang.dbtests.repository.impl.jdbi;
 
 import com.clevergang.dbtests.repository.api.DataRepository;
 import com.clevergang.dbtests.repository.api.data.*;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.PreparedBatch;
-import org.skife.jdbi.v2.util.IntegerColumnMapper;
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.statement.PreparedBatch;
+import org.jdbi.v3.core.statement.StatementContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
@@ -24,10 +25,10 @@ import java.util.List;
 @Repository
 public class JDBIDataRepositoryImpl implements DataRepository {
 
-    private DBI dbi;
+    private Jdbi dbi;
 
     @Autowired
-    public JDBIDataRepositoryImpl(DBI dbi) {
+    public JDBIDataRepositoryImpl(Jdbi dbi) {
         this.dbi = dbi;
     }
 
@@ -35,8 +36,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
     public Company findCompany(Integer pid) {
         try (Handle h = dbi.open()) {
             return h.createQuery("SELECT * FROM company WHERE pid = :pid")
-                    .bind("pid", pid)
-                    .map(Company.class)
+                    .bind("pid", pid).mapToBean(Company.class)
                     .first();
         }
     }
@@ -72,7 +72,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
     @Override
     public void removeProject(Integer pid) {
         try (Handle h = dbi.open()) {
-            h.createStatement("DELETE FROM project WHERE pid = :pid")
+            h.createUpdate("DELETE FROM project WHERE pid = :pid")
                     .bind("pid", pid)
                     .execute();
         }
@@ -82,8 +82,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
     public Department findDepartment(Integer pid) {
         try (Handle h = dbi.open()) {
             return h.createQuery("SELECT pid, name, company_pid companyPid FROM department WHERE pid = :pid")
-                    .bind("pid", pid)
-                    .map(Department.class)
+                    .bind("pid", pid).mapToBean(Department.class)
                     .first();
         }
     }
@@ -98,8 +97,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
                     "FROM department " +
                     "WHERE company_pid = :company_pid " +
                     "ORDER BY pid ")
-                    .bind("company_pid", company.getPid())
-                    .map(Department.class)
+                    .bind("company_pid", company.getPid()).mapToBean(Department.class)
                     .list();
         }
     }
@@ -151,11 +149,11 @@ public class JDBIDataRepositoryImpl implements DataRepository {
         try (Handle h = dbi.open()) {
             return h.createQuery("SELECT pid, name, datestarted FROM project WHERE pid = :pid")
                     .bind("pid", pid)
-                    .map((index, r, ctx) -> {
+                    .map((rs, ctx) -> {
                         Project project = new Project();
-                        project.setPid(r.getInt("pid"));
-                        project.setName(r.getString("name"));
-                        project.setDate(r.getDate("datestarted").toLocalDate());
+                        project.setPid(rs.getInt("pid"));
+                        project.setName(rs.getString("name"));
+                        project.setDate(rs.getDate("datestarted").toLocalDate());
                         return project;
                     })
                     .first();
@@ -165,10 +163,11 @@ public class JDBIDataRepositoryImpl implements DataRepository {
     @Override
     public Integer insertProject(Project project) {
         try (Handle h = dbi.open()) {
-            return h.createStatement("INSERT INTO project (name, datestarted) VALUES (:name, :datestarted)")
+            return h.createUpdate("INSERT INTO project (name, datestarted) VALUES (:name, :datestarted)")
                     .bind("name", project.getName())
                     .bind("datestarted", project.getDate())
-                    .executeAndReturnGeneratedKeys(IntegerColumnMapper.WRAPPER)
+                    .executeAndReturnGeneratedKeys("pid")
+                    .mapTo(Integer.TYPE)
                     .first();
         }
     }
@@ -183,7 +182,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
                         .bind("datestarted", project.getDate())
                         .add();
             }
-            return preparedBatch.executeAndGenerateKeys(IntegerColumnMapper.WRAPPER).list();
+            return preparedBatch.executeAndReturnGeneratedKeys("pid").mapTo(Integer.TYPE).list();
         }
     }
 
@@ -210,8 +209,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
                     "ORDER BY company_name";
 
             return h.createQuery(query)
-                    .bind("totalCostBoundary", totalCostBoundary)
-                    .map(ProjectsWithCostsGreaterThanOutput.class)
+                    .bind("totalCostBoundary", totalCostBoundary).mapToBean(ProjectsWithCostsGreaterThanOutput.class)
                     .list();
         }
     }
@@ -220,8 +218,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
     public Employee findEmployee(Integer pid) {
         try (Handle h = dbi.open()) {
             return h.createQuery("SELECT pid, name, surname, email, department_pid departmentPid, salary FROM employee WHERE pid = :pid")
-                    .bind("pid", pid)
-                    .map(Employee.class)
+                    .bind("pid", pid).mapToBean(Employee.class)
                     .first();
         }
     }
@@ -230,8 +227,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
     public List<Employee> employeesWithSalaryGreaterThan(Integer minSalary) {
         try (Handle h = dbi.open()) {
             return h.createQuery("SELECT * FROM employee WHERE salary > :salary")
-                    .bind("salary", minSalary)
-                    .map(Employee.class)
+                    .bind("salary", minSalary).mapToBean(Employee.class)
                     .list();
         }
     }
@@ -242,7 +238,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
         Assert.notNull(employeeToUpdate.getPid());
 
         try (Handle h = dbi.open()) {
-            h.createStatement(" UPDATE EMPLOYEE SET " +
+            h.createUpdate(" UPDATE EMPLOYEE SET " +
                     " department_pid = :department_pid, " +
                     " name = :name," +
                     " surname = :surname," +
@@ -275,8 +271,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
                     .bind("email", email)
                     .bind("salary", salary)
                     .bind("departmentName", departmentName)
-                    .bind("companyName", companyName)
-                    .map(RegisterEmployeeOutput.class)
+                    .bind("companyName", companyName).mapToBean(RegisterEmployeeOutput.class)
                     .first();
         }
     }
@@ -285,7 +280,7 @@ public class JDBIDataRepositoryImpl implements DataRepository {
     public Integer getProjectsCount() {
         try (Handle h = dbi.open()) {
             return h.createQuery("SELECT count(*) FROM project")
-                    .map(IntegerColumnMapper.WRAPPER)
+                    .mapTo(Integer.TYPE)
                     .first();
         }
 

@@ -1,20 +1,17 @@
 package com.clevergang.dbtests;
 
-import com.avaje.ebean.EbeanServer;
-import com.avaje.ebean.EbeanServerFactory;
-import com.avaje.ebean.config.ServerConfig;
-import com.avaje.ebean.springsupport.txn.SpringAwareJdbcTransactionManager;
+import io.vertx.pgclient.PgPool;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.jdbi.v3.core.Jdbi;
 import org.jooq.conf.RenderNameStyle;
 import org.jooq.conf.Settings;
 import org.jooq.conf.StatementType;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.logging.SLF4JLog;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +28,9 @@ import javax.sql.DataSource;
 @SpringBootApplication
 @Configuration
 public class DbTestsApplication {
+
+    @Value("${datasource.url}")
+    private String jdbcUrl;
 
     /*
      * JOOQ CONFIGURATIONS
@@ -87,42 +87,24 @@ public class DbTestsApplication {
     }
 
     /*
-     * EBEAN CONFIGURATIONS
-     */
-
-    @SuppressWarnings("SpringJavaAutowiringInspection")
-    @Bean
-    public ServerConfig ebeanServerConfig(DataSource dataSource) {
-        ServerConfig config = new ServerConfig();
-        config.setName("ebeanServer");
-        config.setDefaultServer(true);
-        config.setDataSource(dataSource);
-        config.addPackage("com.clevergang.dbtests.repository.impl.ebean.entities");
-        config.setExternalTransactionManager(new SpringAwareJdbcTransactionManager());
-        config.setAutoCommitMode(false);
-        config.setExpressionNativeIlike(true);
-
-        return config;
-    }
-
-    @Bean
-    public EbeanServer ebeanServer(ServerConfig serverConfig) {
-        return EbeanServerFactory.create(serverConfig);
-    }
-
-    /*
      * JDBI Configurations
      */
 
     @SuppressWarnings("SpringJavaAutowiringInspection")
     @Bean
-    public DBI jdbiFactory(DataSource dataSource) {
+    public Jdbi jdbiFactory(DataSource dataSource) {
         // note that for JDBI we have to wrap datasource with TransactionAwareDataSourceProxy otherwise JDBI won't respect
         // transactions created by spring
         TransactionAwareDataSourceProxy transactionAwareDataSourceProxy = new TransactionAwareDataSourceProxy(dataSource);
-        DBI dbi = new DBI(transactionAwareDataSourceProxy);
-        dbi.setSQLLog(new SLF4JLog());  // to enable SLF4J logging
-        return dbi;
+
+        return Jdbi.create(transactionAwareDataSourceProxy);
+    }
+
+    @Bean
+    public PgPool vertxSqlClient() {
+
+        // Create the pooled client
+        return PgPool.pool(jdbcUrl);
     }
 
     public static void main(String[] args) {

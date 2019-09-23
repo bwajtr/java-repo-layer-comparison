@@ -1,6 +1,12 @@
 package com.clevergang.dbtests;
 
-import com.clevergang.dbtests.repository.impl.ebean.EBeanDataRepositoryImpl;
+import com.clevergang.dbtests.repository.api.data.Company;
+import com.clevergang.dbtests.repository.api.data.Employee;
+import com.clevergang.dbtests.repository.api.data.RegisterEmployeeOutput;
+import com.clevergang.dbtests.repository.impl.jdbi.JDBIDataRepositoryImpl;
+import com.clevergang.dbtests.repository.impl.vertxsql.VertxSQLDataRepositoryImpl;
+import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,27 +17,28 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * @author Bretislav Wajtr
- */
+import java.math.BigDecimal;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @ContextConfiguration(classes = DbTestsApplication.class)
-@Transactional
-@Rollback
-public class EbeanScenariosTest {
+public class VertxSQLScenariosTest {
 
-    @SuppressWarnings("SpringJavaAutowiringInspection")
     @Autowired
-    private EBeanDataRepositoryImpl eBeanDataRepository;
+    private VertxSQLDataRepositoryImpl vertxSQLDataRepository;
 
     private Scenarios scenarios;
 
     @Before
     public void setup() {
-        scenarios = new Scenarios(eBeanDataRepository);
+        vertxSQLDataRepository.begin();
+        scenarios = new Scenarios(vertxSQLDataRepository);
     }
 
+    @After
+    public void dispose() {
+        vertxSQLDataRepository.rollback();
+    }
 
     @Test
     public void scenarioOne() {
@@ -93,3 +100,6 @@ public class EbeanScenariosTest {
         scenarios.removeSingleEntityScenario();
     }
 }
+
+
+
